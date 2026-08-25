@@ -15,6 +15,10 @@ func (s *Store) Record(id string) (domain.BeverageRecord, error) {
 	err := s.db.View(func(tx *bbolt.Tx) error { return getJSON(tx, recordsBucket, id, &out) })
 	return out, err
 }
+func getRecordInTx(tx *bbolt.Tx, id string) (domain.BeverageRecord, error) {
+	var out domain.BeverageRecord
+	return out, getJSON(tx, recordsBucket, id, &out)
+}
 func (s *Store) Records() ([]domain.BeverageRecord, error) {
 	out := []domain.BeverageRecord{}
 	err := s.db.View(func(tx *bbolt.Tx) error {
@@ -32,6 +36,30 @@ func (s *Store) Records() ([]domain.BeverageRecord, error) {
 }
 func (s *Store) SaveReview(review domain.ReviewResult) error {
 	return s.db.Update(func(tx *bbolt.Tx) error { return putJSON(tx, reviewsBucket, review.ID, review) })
+}
+
+// SaveReviewTx persists a review result and its updated record in a single
+// transaction. Because bbolt serializes write transactions, each concurrent
+// reviewer observes the most recent record state instead of a stale snapshot,
+// so earlier review results are preserved rather than overwritten by a later
+// reviewer that read the same stale record.
+func (s *Store) SaveReviewTx(review domain.ReviewResult, update func(domain.BeverageRecord) (domain.BeverageRecord, error)) (domain.BeverageRecord, error) {
+	var updated domain.BeverageRecord
+	err := s.db.Update(func(tx *bbolt.Tx) error {
+		record, err := getRecordInTx(tx, review.RecordID)
+		if err != nil {
+			return err
+		}
+		updated, err = update(record)
+		if err != nil {
+			return err
+		}
+		if err = putJSON(tx, reviewsBucket, review.ID, review); err != nil {
+			return err
+		}
+		return putJSON(tx, recordsBucket, review.RecordID, updated)
+	})
+	return updated, err
 }
 func (s *Store) ReviewsFor(recordID string) ([]domain.ReviewResult, error) {
 	out := []domain.ReviewResult{}
