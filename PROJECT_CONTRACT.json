@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "metrics": {
+    "production_loc": 2368,
+    "production_files": 18,
+    "production_packages": 10,
+    "test_files": 9,
+    "production_functions": 73,
+    "decision_points": 146
+  },
+  "persistence": {
+    "module": "go.etcd.io/bbolt",
+    "entities": [
+      "BeverageRecord",
+      "ReviewResult",
+      "CustomerProfile",
+      "AuditEvent"
+    ],
+    "reopen_test": "TestPersistenceSurvivesReopen"
+  },
+  "workflows": [
+    {
+      "steps": ["接收新品资料", "校验配方和字段", "保存记录与审计", "查询并展示新品"],
+      "test": "TestWorkflowOne"
+    },
+    {
+      "steps": ["登记待审新品", "审核员提交决定", "持久化处理结果", "查询处理历史"],
+      "test": "TestWorkflowTwo"
+    },
+    {
+      "steps": ["登记顾客偏好", "筛选过敏和预算", "计算推荐排序", "返回推荐结果"],
+      "test": "TestWorkflowThree"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "tea17-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
